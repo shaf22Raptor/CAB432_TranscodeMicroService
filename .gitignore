@@ -1,0 +1,17 @@
+# Ignore .env file in vidtranscode and vid-api2
+vidtranscode/.env
+vid-api2/.env
+
+# Ignore api knexfile and app.js file
+vid-api2/knexfile.js
+vid-api2/app.js
+
+#Ignore uploads
+vid-api2/uploads/videos
+
+# Ignore knexfile
+vid-api2/knexfile.js
+
+# Ignore node_modules folders in vidtranscode and vid-api2
+vidtranscode/node_modules/
+vid-api2/node_modules/
