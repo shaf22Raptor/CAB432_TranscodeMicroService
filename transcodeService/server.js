@@ -6,9 +6,14 @@ const port = 5001;
 // Middleware to parse JSON request bodies
 app.use(express.json());
 
+app.get('/health', (req, res) => {
+  res.status(200).send('Healthy');
+});
+
 // Route to handle transcoding requests
 app.post('/transcode', async (req, res) => {
-  const Key  = req.body.s3Params.Key;
+  const Key  = req.body.key;
+  console.log(Key);
   console.log("service: transcode");
 
   if (!Key) {
@@ -16,15 +21,6 @@ app.post('/transcode', async (req, res) => {
   }
 
   try {
-    // Set appropriate headers for video streaming
-    // res.writeHead(200, {
-    //   'Content-Type': 'video/mp4',
-    //   'Content-Disposition': 'inline',
-    //   'Accept-Ranges': 'bytes'
-    // });
-
-    // Call your streaming function here
-    // Assume `transcodeStream` is a function that takes the videoId and streams video data
     transcodeVideo(Key, res);
   } catch (error) {
     console.error('Transcoding error:', error);

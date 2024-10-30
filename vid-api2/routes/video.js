@@ -8,6 +8,7 @@ const ffmpegpath = require('@ffmpeg-installer/ffmpeg').path;
 ffmpeg.setFfmpegPath(ffmpegpath);
 
 const { S3Client, GetObjectCommand, PutObjectCommand } = require('@aws-sdk/client-s3');
+const { SQSClient, SendMessageCommand, GetQueueUrlCommand } = require("@aws-sdk/client-sqs");
 const { fromIni } = require('@aws-sdk/credential-providers');
 const RetrieveSecret = require('../configFiles/secrets');
 const getParameter = require('../configFiles/parameter');
@@ -15,8 +16,15 @@ const getParameter = require('../configFiles/parameter');
 // Initialize the S3 client using credentials from the AWS profile
 const s3 = new S3Client({
   region: 'ap-southeast-2',
-  credentials: fromIni({ profile: 'CAB432-STUDENT-901444280953' }),
+  credentials: fromIni({ profile: 'CAB432-STUDENT-901444280953' })
 });
+
+// Initialize the SQS client using credentials from the AWS profile
+const sqs = new SQSClient({
+  region: "ap-southeast-2",
+  //credentials: fromIni({ profile: 'CAB432-STUDENT-901444280953' })
+});
+
 
 /* Upload video to S3 and save metadata to database. User must be authenticated */
 router.post('/:email/upload-video', authorization, async function (req, res, next) {
@@ -77,11 +85,9 @@ router.post('/:email/upload-video', authorization, async function (req, res, nex
 });
 
 function requestTranscoding(videoKey,res) {
-  const s3Params = {
-    Bucket: 'n11245409-assessment2',
-    Key: videoKey
-  };
-
+  const key = videoKey;
+  const payload = JSON.stringify({key});
+  console.log(payload);
   const options = {
     hostname: 'localhost',
     port: 5001,  // Port where the transcoding service is running
@@ -89,7 +95,7 @@ function requestTranscoding(videoKey,res) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Content-Length': Buffer.byteLength(JSON.stringify({ s3Params }))
+      'Content-Length': Buffer.byteLength(payload)
     },
   };
 
@@ -120,9 +126,24 @@ function requestTranscoding(videoKey,res) {
   });
 
   // Write s3Params to the request body as JSON
-  req.write(JSON.stringify({ s3Params }));
+  req.write(payload);
   req.end();
 };
+// async function sendTranscodeRequest(videoKey,res) {
+//   const params = {
+//     QueueUrl: 'https://sqs.ap-southeast-2.amazonaws.com/901444280953/N11245409A3',
+//     MessageBody: JSON.stringify({ key: videoKey })
+//   };
+
+//   try {
+//     const data = await sqs.send(new SendMessageCommand(params));
+//     console.log('Transcoding request sent with message ID:', data.MessageId);
+//     return data.MessageID
+//   } catch(error) {
+//     console.error('Error sending to SQS:', error);
+//     throw new Error('Failed to send to SQS');
+//   }
+// }
 
 
 /* Stream video from S3 using ffmpeg */
@@ -131,52 +152,14 @@ router.get('/stream-video/:videoId', async (req, res) => {
   console.log(videoKey);
   console.log("using api route for streaming video");
   try {
-    const result = await requestTranscoding(videoKey,res);
+    await sendTranscodeRequest(videoKey,res);
+    res.json({ message: 'Transcoding request sent successfully', videoKey });
   } catch (error) {
+    console.error('Failed to send transcode request:', error);
     res.status(500).json({ error: 'Failed to start transcoding' });
   }
-
-  // const videoKey = req.params.videoId;
-  // const s3Params = {
-  //   Bucket: 'n11245409-assessment2',
-  //   Key: videoKey
-  // };
-  // try {
-  //   // Fetch the video from S3
-  //   const s3Data = await s3.send(new GetObjectCommand(s3Params));
-  //   const s3Stream = s3Data.Body;
-
-  //   // Set headers for video streaming
-  //   res.writeHead(200, {
-  //     'Content-Type': 'video/mp4',
-  //     'Content-Disposition': 'inline',
-  //     'Accept-Ranges': 'bytes'
-  //   });
-
-  //   // Stream the video with ffmpeg, transcoding it if necessary
-  //   ffmpeg(s3Stream)
-  //     .videoCodec('libx264')  // Using H.264 codec
-  //     .audioCodec('aac')      // Using AAC codec
-  //     .format('mp4')
-  //     .outputOptions([
-  //       '-movflags frag_keyframe+empty_moov',  // Allows the video to be played before being fully downloaded
-  //       '-preset veryslow',   // Ensure transcoding quality is as high as possible
-  //       '-crf 18' // crf 18 ensures high quality transcoding
-  //     ])
-  //     .on('error', (err) => {
-  //       console.error('Error in transcoding:', err.message);
-  //       if (!res.headersSent) {
-  //         res.status(500).json({ success: false, message: 'Error streaming video from S3' });
-  //       }
-  //     })
-  //     .pipe(res, { end: true });
-  // } catch (err) {
-  //   console.error('Error streaming video from S3:', err);
-  //   if (!res.headersSent) {
-  //     res.status(500).json({ success: false, message: 'Error streaming video from S3' });
-  //   }
-  // }
 });
+
 /* Retrieve all video metadata */
 router.get('/retrieve-videos', function (req, res) {
   req.db.from('videos').select('*')

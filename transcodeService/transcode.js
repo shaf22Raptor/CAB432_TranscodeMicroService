@@ -7,7 +7,7 @@ const { fromIni } = require('@aws-sdk/credential-provider-ini');
 
 const s3 = new S3Client({
   region: 'ap-southeast-2',
-  credentials: fromIni({ profile: 'CAB432-STUDENT-901444280953' }),
+  //credentials: fromIni({ profile: 'CAB432-STUDENT-901444280953' }),
 });
 
 async function transcodeVideo(videoId, res) {
