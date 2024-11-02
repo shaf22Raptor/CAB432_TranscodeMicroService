@@ -14,7 +14,7 @@ app.get('/health', (req, res) => {
 app.post('/transcode', async (req, res) => {
   const Key  = req.body.key;
   console.log(Key);
-  console.log("service: transcode");
+  console.log("service: transcode: ", Key);
 
   if (!Key) {
     return res.status(400).json({ error: 'Video ID is required' });

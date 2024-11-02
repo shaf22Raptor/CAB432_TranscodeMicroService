@@ -1,3 +1,4 @@
+require('dotenv').config();
 const ffmpeg = require('fluent-ffmpeg');
 const ffmpegpath = require('@ffmpeg-installer/ffmpeg').path;
 ffmpeg.setFfmpegPath(ffmpegpath);
@@ -55,55 +56,6 @@ async function transcodeVideo(videoId, res) {
       res.end();  // End the response gracefully if headers were already sent
     }
   }
-  // const s3Params = {
-  //   Bucket: 'n11245409-assessment2',  // Your S3 bucket name
-  //   Key: videoId  // The video file name in the bucket
-  // };
-  // try {
-  //   // Fetch the video from S3
-  //   const s3Data = await s3.send(new GetObjectCommand(s3Params));
-  //   const s3Stream = s3Data.Body;
-
-  //   // Set headers for video streaming
-  //   res.writeHead(200, {
-  //     'Content-Type': 'video/mp4',
-  //     'Content-Disposition': 'inline',
-  //     'Accept-Ranges': 'bytes'
-  //   });
-
-  //   // Stream the video with ffmpeg, transcoding it if necessary
-  //   const stream = ffmpeg(s3Stream)
-  //     .videoCodec('libx264')  // Using H.264 codec
-  //     .audioCodec('aac')      // Using AAC codec
-  //     .format('mp4')
-  //     .outputOptions([
-  //       '-movflags frag_keyframe+empty_moov',  // Allows the video to be played before being fully downloaded
-  //       '-preset veryslow',   // Ensure transcoding quality is as high as possible
-  //       '-crf 18' // crf 18 ensures high quality transcoding
-  //     ])
-  //     .on('error', (err) => {
-  //       console.error('Error during transcoding:', err.message);
-
-  //       // Send error response if headers haven’t been sent
-  //       if (!res.headersSent) {
-  //         res
-  //         res.status(500).json({ success: false, message: 'Error in video transcoding' });
-  //       }
-  //       else {
-  //         res.end();
-  //       }
-  //     });
-
-  //     stream.pipe(res, { end: true });
-
-  // } catch (err) {
-  //   console.error('Error streaming video from S3:', err);
-  //   if (!res.headersSent) {
-  //     res.status(500).json({ success: false, message: 'Error streaming video from S3' });
-  //   } else {
-  //     res.end();
-  //   }
-  // }
 }
 
 module.exports = {
